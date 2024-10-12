@@ -1,0 +1,5 @@
+museo_louvre, 25, 2, 'Visitar el Museo del Louvre', ['arte',
+'historia']
+paseo_en_bici, 30, 3, 'Paseo en bicicleta por la ciudad', ['aventura',
+'naturaleza']
+

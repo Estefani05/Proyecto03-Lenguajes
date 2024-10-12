@@ -1,0 +1,3 @@
+paris, museo_louvre
+paris, paseo_en_bici
+nueva_york, paseo_en_bici

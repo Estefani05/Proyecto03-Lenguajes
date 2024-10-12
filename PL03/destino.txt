@@ -1,0 +1,3 @@
+paris, 'Ciudad de la Luz'
+nueva_york, 'La Gran Manzana'
+tokio, 'La capital del Japón'
