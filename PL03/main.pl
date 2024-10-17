@@ -1,7 +1,7 @@
 :- discontiguous procesar_opcion_administrativa/1.
 
 cargar_destino :-
-    open('C:/Users/estef/OneDrive/Escritorio/PL03/destino.txt', read, Stream),
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\destino.txt', read, Stream),
     cargar_destino_aux(Stream),
     close(Stream).
 
@@ -16,7 +16,7 @@ cargar_destino_aux(Stream) :-
     ).
 
 cargar_actividades :-
-    open('C:/Users/estef/OneDrive/Escritorio/PL03/actividad.txt', read, Stream),
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
     cargar_actividades_aux(Stream),
     close(Stream).
 
@@ -32,7 +32,7 @@ cargar_actividades_aux(Stream) :-
 
 % Cargar asociaciones desde asociar_actividad.txt
 cargar_asociaciones :-
-    open('C:/Users/estef/OneDrive/Escritorio/PL03/asociar_actividad.txt', read, Stream),
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', read, Stream),
     leer_asociaciones(Stream),
     close(Stream).
 
@@ -123,14 +123,24 @@ menu_agregar_hechos :-
         menu_administrativo
     ).
 
+% Agregar destino - opcion 1
 agregar_destino :- 
     write('Ingrese el nombre del destino: '),
-    read(Nombre),
+    read(Nombre), % Captura el nombre
     write('Ingrese la descripcion del destino: '),
     read(Descripcion),
     assert(destino(Nombre, Descripcion)),
     writeln('Destino agregado exitosamente.'),
+    escribir_destinoTxt(Nombre, Descripcion),  % Llamada para escribir en el archivo
     writeln('Regresando al menu de agregar hechos...').
+
+% Función para escribir un destino en el archivo destino.txt
+escribir_destinoTxt(Nombre, Descripcion) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\destino.txt', append, Stream),
+    write(Stream, destino(Nombre, Descripcion)),
+    write(Stream, '.'),
+    nl(Stream), % Escribir en el archivo destino agrega un . al final
+    close(Stream).
 
 % Agregar actividad - opcion 2
 agregar_actividad :- 
@@ -147,7 +157,16 @@ agregar_actividad :-
     atomic_list_concat(Tipos, ',', TiposAtom),
     assert(actividad(Nombre, Costo, Duracion, Descripcion, TiposAtom)),
     writeln('Actividad agregada exitosamente.'),
+    escribir_actividadTxt(Nombre,Costo,Descripcion,Tipos),  % Llamada para escribir en el archivo
     writeln('Regresando al menu de agregar hechos...').
+
+% Función para escribir una actividad en el archivo actividad.txt
+escribir_actividadTxt(Nombre,Costo,Descripcion,Tipos) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', append, Stream),
+    write(Stream, actividad(Nombre,Costo,Descripcion,Tipos)), % Escribir en el archivo
+    write(Stream, '.'),
+    nl(Stream), 
+    close(Stream).
 
 % Agregar asociacion actividad a destino - opcion 3
 asociar_actividad_destino :- 
@@ -156,8 +175,17 @@ asociar_actividad_destino :-
     write('Ingrese el nombre de la actividad: '),
     read(Actividad),
     assert(asociar_actividad(Destino, Actividad)),
+    escribir_asosiarTxt(Destino,Actividad), 
     writeln('Actividad asociada exitosamente.'),
     writeln('Regresando al menu de agregar hechos...').
+
+% Función para escribir una asociacion en el archivo asociar_actividad.txt
+escribir_asosiarTxt(Destino,Actividad) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', append, Stream),
+    write(Stream, asociar_actividad(Destino,Actividad)), % Escribir en el archivo
+    write(Stream, '.'),
+    nl(Stream), 
+    close(Stream).
 
 
 %consultar actividades por destino - opcion 2

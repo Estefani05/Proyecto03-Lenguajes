@@ -1,2 +1,4 @@
 actividad(museo_louvre, 25, 2, "Visitar el Museo del Louvre", ["arte", "historia"]).
 actividad(paseo_en_bici, 30, 3, "Paseo en bicicleta por la ciudad", ["aventura", "naturaleza"]).
+actividad(paseo,2,s,[aventura]).
+actividad(a,a,a,[si,no,a_veces]).
