@@ -340,16 +340,12 @@ calcular_totales([[_, Costo, Duracion, _, _] | Resto], CostoTotal, DuracionTotal
     DuracionTotal is DuracionResto + Duracion.
 
 % ----------------------Agregar asociacion actividad a destino - opcion 3 FIN--------------------------------------------------------
-
-% Consultar actividades por tipo - opcion 3
+% Consultar actividades por tipo - opción 3
 consultar_actividades_tipo :-
     write('Ingrese el tipo de actividad: '),
     read(Tipo),
-    findall([Actividad, Costo, Duracion, Descripcion, Tipos], 
-            (actividad(Actividad, Costo, Duracion, Descripcion, Tipos),
-             member(Tipo, Tipos)), 
-            Actividades),
-    (   Actividades = [] 
+    obtener_actividades_por_tipo(Tipo, Actividades),
+    (   Actividades = []
     ->  writeln('No hay actividades de este tipo.')
     ;   writeln('Actividades de tipo '), write(Tipo), writeln(':'),
         listar_actividades(Actividades),
@@ -357,7 +353,24 @@ consultar_actividades_tipo :-
         write('Costo total: '), writeln(CostoTotal),
         write('Duracion total (en dias): '), writeln(DuracionTotal)
     ),
-    writeln('Regresando al menu administrativo...').
+    writeln('Regresando al menú administrativo...').
+
+% Predicado para obtener actividades por tipo desde actividad.txt
+obtener_actividades_por_tipo(Tipo, Actividades) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    read_actividades_por_tipo(Stream, Tipo, Actividades),
+    close(Stream).
+
+read_actividades_por_tipo(Stream, Tipo, Actividades) :-
+    read(Stream, Term),
+    (   Term \= end_of_file
+    ->  (   Term = actividad(Actividad, Costo, Duracion, Descripcion, Tipos),
+            member(Tipo, Tipos)
+        ->  Actividades = [[Actividad, Costo, Duracion, Descripcion, Tipos] | Resto],
+            read_actividades_por_tipo(Stream, Tipo, Resto)
+        ;   read_actividades_por_tipo(Stream, Tipo, Actividades)
+        )
+    ;   Actividades = []).
 
 
 % -----------------por monto------------------------
