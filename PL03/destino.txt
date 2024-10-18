@@ -1,3 +1,4 @@
 destino(costa_rica,caluroso_pero_hermoso).
 destino(paris,encantador).
 destino(espana,toros).
+destino(mexico,'Muy hermoso').

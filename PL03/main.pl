@@ -131,7 +131,8 @@ agregar_destino :-
     read(Nombre),  % Captura el nombre con espacios
     validar_nombre(Nombre),  % Llamada a la validación
     write('Ingrese la descripcion del destino: '),
-    read(Descripcion),  % Captura la descripción con espacios
+    read(DescripcionInput),  % Leemos la descripción ingresada
+    format(atom(Descripcion), "'~w'", [DescripcionInput]),
     assert(destino(Nombre, Descripcion)),
     writeln('Destino agregado exitosamente.'),
     escribir_destinoTxt(Nombre, Descripcion),  % Llamada para escribir en el archivo
@@ -151,6 +152,8 @@ escribir_destinoTxt(Nombre, Descripcion) :-
 
 
 % Agregar actividad - opcion 2
+% Agregar actividad - opcion 2
+% Agregar actividad - opcion 2
 agregar_actividad :- 
     write('Ingrese el nombre de la actividad: '),
     read(Nombre),
@@ -162,24 +165,30 @@ agregar_actividad :-
     read(Duracion),
     validar_duracion(Duracion),
     write('Ingrese la descripcion de la actividad: '),
-   read(DescripcionInput),  % Leemos la descripción ingresada
-    format(atom(Descripcion), '"~w"', [DescripcionInput]),  % Agregamos comillas a la descripción
-    write('Ingrese los tipos de la actividad (ej. aventura,naturaleza): '),
-    read(TiposInput),  % Leemos la entrada del usuario
-    format(atom(TiposFormateados), '[~w]', [TiposInput]),  % Formateamos añadiendo corchetes
-    assert(actividad(Nombre, Costo, Duracion, Descripcion, TiposFormateados)),
+    read(DescripcionInput),  % Leemos la descripción ingresada
+    format(atom(Descripcion), "'~w'", [DescripcionInput]),  % Agregamos comillas a la descripción
+    write('Ingrese los tipos de la actividad (ej. [\'aventura\',\'naturaleza\']): '),
+    read(TiposInput),  % Leemos la entrada del usuario como lista
+    validar_tipos(TiposInput),  % Llamamos a la validación de tipos
+    assert(actividad(Nombre, Costo, Duracion, Descripcion, TiposInput)),  % Usamos TiposInput directamente
     writeln('Actividad agregada exitosamente.'),
-    escribir_actividadTxt(Nombre,Costo,Duracion,Descripcion,TiposFormateados),  % Llamada para escribir en el archivo
+    escribir_actividadTxt(Nombre, Costo, Duracion, Descripcion, TiposInput),  % Llamada para escribir en el archivo
     writeln('Regresando al menu de agregar hechos...').
 
+% Función para validar que la entrada sea una lista de strings
+validar_tipos(Tipos) :-
+    is_list(Tipos),
+    forall(member(Tipo, Tipos), (atom_string(Tipo, _) ; string(Tipo))),
+    !.
 
 % Función para escribir una actividad en el archivo actividad.txt
-escribir_actividadTxt(Nombre,Costo,Duracion,Descripcion,Tipos) :-
+escribir_actividadTxt(Nombre, Costo, Duracion, Descripcion, Tipos) :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', append, Stream),
-    write(Stream, actividad(Nombre,Costo,Duracion,Descripcion,Tipos)), % Escribir en el archivo
-    write(Stream, '.'),
-    nl(Stream), 
+    write(Stream, actividad(Nombre, Costo, Duracion, Descripcion, Tipos)), % Escribir en el archivo
+    write(Stream, '.'), 
+    nl(Stream),
     close(Stream).
+
 
 % ------------------------asociar-------------------------------------------------------------------------------------
 asociar_actividad_destino :- 
@@ -419,19 +428,20 @@ validar_nombre(_) :-
 % Validar que el costo solo sea un numero de tipo float y que sea positivo
 validar_costo(Costo) :-
     number(Costo),        % Verifica que sea un numero
-    float(Costo),         % Verifica que sea un numero flotante (con decimales)
+    integer(Costo),         % Verifica que sea un numero
     Costo >= 0,           % Verifica que sea positivo (mayor o igual a 0)
     !.
 
 validar_costo(_) :-
-    writeln('Error: El costo debe ser un numero flotante positivo (e.g., 123.45).'),
+    writeln('Error: El costo debe ser un numero entero positivo (e.g., 1 v 2 v 3).'),
     fail.  % Falla si no es un número flotante positivo
 
 
 % Validar que la duracion solo sea un número entero no negativo
 validar_duracion(Duracion) :-
     number(Duracion),  % Verifica que sea un número
-     Duracion >= 0,           % Verifica que sea positivo (mayor o igual a 0)
+    integer(Duracion), 
+    Duracion >= 0,           % Verifica que sea positivo (mayor o igual a 0)
     !.
 
 validar_duracion(_) :-

@@ -1,3 +1,5 @@
 actividad(ciclismo_nocturno,10000.0,1,"tour_nocturno_en_bici_de_ruta",[aventura,naturaleza,deporte]).
 actividad(tennis,5000.0,1,"deporte_entretenido",[deporte,diversion]).
 actividad(baile,1000.0,1,"bailar_salsa",[diversion]).
+actividad(natacion,200.0,2,"Es muy refrescante",[interesantes]).
+actividad(bat,2.0,2,'jupiter',[w]).
