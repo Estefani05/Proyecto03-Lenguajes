@@ -376,7 +376,7 @@ read_actividades_por_tipo(Stream, Tipo, Actividades) :-
 % -----------------por monto------------------------
 % Consultar actividades por precio - opcion 4
 consultar_actividades_precio :-
-    write('Ingrese el monto: '),
+    write('Ingrese el monto (numero flotante): '),
     read(Monto),
     write('¿Desea consultar actividades mas baratas o mas caras? (b/c): '),
     read(Opcion),
@@ -397,10 +397,9 @@ consultar_actividades_precio :-
         listar_actividades(Actividades),
         calcular_totales(Actividades, CostoTotal, DuracionTotal),
         write('Costo total: '), writeln(CostoTotal),
-        write('Duracion total (en dias): '), writeln(DuracionTotal)
+        write('Duración total (en dias): '), writeln(DuracionTotal)
     ),
     writeln('Regresando al menu administrativo...').
-
 
 
 
