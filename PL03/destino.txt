@@ -1,4 +1,3 @@
-destino(paris, 'Ciudad del amor').
-destino(nueva_york, 'La Gran Manzana').
-destino(tokio, 'Ciudad futurista').
-destino(costarica,caliente).
+destino(costa_rica,caluroso_pero_hermoso).
+destino(paris,encantador).
+destino(espana,toros).

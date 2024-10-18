@@ -12,7 +12,7 @@ cargar_destino_aux(Stream) :-
     ;   Term = destino(Nombre_del_destino, Descripcion_del_destino),
         assert(destino(Nombre_del_destino, Descripcion_del_destino)),
         cargar_destino_aux(Stream)
-    ;   writeln('Error procesando la linea.')
+    ;   writeln('Error procesando la linea de destinos.')
     ).
 
 cargar_actividades :-
@@ -27,7 +27,7 @@ cargar_actividades_aux(Stream) :-
     ;   Term =.. [actividad, Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo],
         assert(actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)),
         cargar_actividades_aux(Stream)
-    ;   writeln('Error procesando la linea.')
+    ;   writeln('Error procesando la linea de actividades.')
     ).
 
 % Cargar asociaciones desde asociar_actividad.txt
@@ -43,7 +43,7 @@ leer_asociaciones(Stream) :-
     ;   Term = asociar_actividad(Destino, Actividad),
         assert(asociar_actividad(Destino, Actividad)),
         leer_asociaciones(Stream)
-    ;   writeln('Error procesando la linea.')
+    ;   writeln('Error procesando la linea de asociaciones.')
     ).
 
 
@@ -125,14 +125,19 @@ menu_agregar_hechos :-
 
 % Agregar destino - opcion 1
 agregar_destino :- 
+    write('Debe separarse por _ si es necesario, de lo contrario abra un error en sistema.'),
+    nl,
     write('Ingrese el nombre del destino: '),
-    read(Nombre), % Captura el nombre
+    read(Nombre),  % Captura el nombre con espacios
+    validar_nombre(Nombre),  % Llamada a la validación
     write('Ingrese la descripcion del destino: '),
-    read(Descripcion),
+    read(Descripcion),  % Captura la descripción con espacios
     assert(destino(Nombre, Descripcion)),
     writeln('Destino agregado exitosamente.'),
     escribir_destinoTxt(Nombre, Descripcion),  % Llamada para escribir en el archivo
     writeln('Regresando al menu de agregar hechos...').
+
+
 
 % Función para escribir un destino en el archivo destino.txt
 escribir_destinoTxt(Nombre, Descripcion) :-
@@ -142,76 +147,180 @@ escribir_destinoTxt(Nombre, Descripcion) :-
     nl(Stream), % Escribir en el archivo destino agrega un . al final
     close(Stream).
 
+
+
+
 % Agregar actividad - opcion 2
 agregar_actividad :- 
     write('Ingrese el nombre de la actividad: '),
     read(Nombre),
+    validar_nombre(Nombre),  % Llamada a la validación
     write('Ingrese el costo de la actividad: '),
     read(Costo),
+    validar_costo(Costo),
     write('Ingrese la duracion de la actividad (en dias): '),
     read(Duracion),
+    validar_duracion(Duracion),
     write('Ingrese la descripcion de la actividad: '),
-    read(Descripcion),
-    write('Ingrese los tipos de la actividad (separados por coma): '),
-    read(Tipos),
-    atomic_list_concat(Tipos, ',', TiposAtom),
-    assert(actividad(Nombre, Costo, Duracion, Descripcion, TiposAtom)),
+   read(DescripcionInput),  % Leemos la descripción ingresada
+    format(atom(Descripcion), '"~w"', [DescripcionInput]),  % Agregamos comillas a la descripción
+    write('Ingrese los tipos de la actividad (ej. aventura,naturaleza): '),
+    read(TiposInput),  % Leemos la entrada del usuario
+    format(atom(TiposFormateados), '[~w]', [TiposInput]),  % Formateamos añadiendo corchetes
+    assert(actividad(Nombre, Costo, Duracion, Descripcion, TiposFormateados)),
     writeln('Actividad agregada exitosamente.'),
-    escribir_actividadTxt(Nombre,Costo,Descripcion,Tipos),  % Llamada para escribir en el archivo
+    escribir_actividadTxt(Nombre,Costo,Duracion,Descripcion,TiposFormateados),  % Llamada para escribir en el archivo
     writeln('Regresando al menu de agregar hechos...').
 
+
 % Función para escribir una actividad en el archivo actividad.txt
-escribir_actividadTxt(Nombre,Costo,Descripcion,Tipos) :-
+escribir_actividadTxt(Nombre,Costo,Duracion,Descripcion,Tipos) :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', append, Stream),
-    write(Stream, actividad(Nombre,Costo,Descripcion,Tipos)), % Escribir en el archivo
+    write(Stream, actividad(Nombre,Costo,Duracion,Descripcion,Tipos)), % Escribir en el archivo
     write(Stream, '.'),
     nl(Stream), 
     close(Stream).
 
-% Agregar asociacion actividad a destino - opcion 3
+% ------------------------asociar-------------------------------------------------------------------------------------
 asociar_actividad_destino :- 
     write('Ingrese el nombre del destino: '),
     read(Destino),
+    verificar_destino(Destino), % Verificar si el destino existe
+    !, % Continuar solo si el destino es válido
     write('Ingrese el nombre de la actividad: '),
     read(Actividad),
+    verificar_actividad(Actividad), % Verificar si la actividad existe
     assert(asociar_actividad(Destino, Actividad)),
-    escribir_asosiarTxt(Destino,Actividad), 
+    escribir_asosiarTxt(Destino, Actividad),
     writeln('Actividad asociada exitosamente.'),
     writeln('Regresando al menu de agregar hechos...').
 
-% Función para escribir una asociacion en el archivo asociar_actividad.txt
-escribir_asosiarTxt(Destino,Actividad) :-
+% Función para escribir una asociación en el archivo asociar_actividad.txt
+escribir_asosiarTxt(Destino, Actividad) :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', append, Stream),
-    write(Stream, asociar_actividad(Destino,Actividad)), % Escribir en el archivo
+    write(Stream, asociar_actividad(Destino, Actividad)), % Escribir en el archivo
     write(Stream, '.'),
     nl(Stream), 
     close(Stream).
 
 
-%consultar actividades por destino - opcion 2
+% Predicado para verificar si la actividad existe en actividad.txt
+verificar_actividad(Actividad) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    buscar_actividad(Stream, Actividad, Existe),
+    close(Stream),
+    (   Existe == true
+    ->  true  % Continuar si la actividad existe
+    ;   writeln('Error: La actividad ingresada no existe.'),
+        fail  % Detener el proceso si no existe
+    ).
+
+
+% Predicado para verificar si el destino existe en destino.txt (solo verifica el nombre del destino)
+verificar_destino(Destino) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\destino.txt', read, Stream),
+    buscar_destino(Stream, Destino, Existe),
+    close(Stream),
+    (   Existe == true
+    ->  true  % Continuar si el destino existe
+    ;   writeln('Error: El destino ingresado no existe.'),
+        fail  % Detener el proceso si no existe
+    ).
+
+% Predicado para buscar un destino en el archivo destino.txt
+buscar_destino(Stream, DestinoBuscado, Existe) :-
+    read(Stream, Term),
+    (   Term == end_of_file
+    ->  Existe = false
+    ;   (   Term = destino(DestinoActual, _),  % Ignorar el segundo argumento
+            DestinoActual == DestinoBuscado
+        ->  Existe = true
+        ;   buscar_destino(Stream, DestinoBuscado, Existe)
+        )
+    ).
+
+
+
+% Predicado para buscar una actividad en el archivo actividad.txt
+buscar_actividad(Stream, ActividadBuscada, Existe) :-
+    read(Stream, Term),
+    (   Term == end_of_file
+    ->  Existe = false
+    ;   (   Term = actividad(ActividadActual, _, _, _, _),  % Ignorar los otros argumentos
+            ActividadActual == ActividadBuscada
+        ->  Existe = true
+        ;   buscar_actividad(Stream, ActividadBuscada, Existe)
+        )
+    ).
+
+
+% ----------------------consultar actividades por destino - opcion 2--------------------------------------------------------
+% Predicado principal para consultar actividades por destino
 pre_consultar_actividades_destino :-
     write('Ingrese el nombre del destino: '),
     read(Destino),
     consultar_actividades_destino(Destino).
 
-
 consultar_actividades_destino(Destino) :-
-    findall([Actividad, Costo, Duracion, Descripcion, Tipos], 
-            (asociar_actividad(Destino, Actividad),
-             actividad(Actividad, Costo, Duracion, Descripcion, Tipos)), 
-            Actividades),
-    (   Actividades = [] 
+    % Obtener la actividad asociada al destino desde el archivo asociar_actividad.txt
+    obtener_actividad_por_destino(Destino, ActividadesDestino),
+    (   ActividadesDestino = [] 
     ->  writeln('No hay actividades para este destino.')
-    ;   writeln('Actividades disponibles en '), write(Destino), writeln(':'),
-        listar_actividades(Actividades),
-        calcular_totales(Actividades, CostoTotal, DuracionTotal),
-        write('Costo total: '), writeln(CostoTotal),
-        write('Duracion total (en dias): '), writeln(DuracionTotal)
+    ;   % Buscar los detalles de las actividades en el archivo actividad.txt
+        obtener_detalles_actividades(ActividadesDestino, DetallesActividades),
+        (   DetallesActividades = []
+        ->  writeln('No hay actividades con detalles disponibles para este destino.')
+        ;   writeln('Actividades disponibles en '), write(Destino), writeln(':'),
+            listar_actividades(DetallesActividades), % Mostrar actividades una vez
+            % Calcular totales solo una vez
+            calcular_totales(DetallesActividades, CostoTotal, DuracionTotal),
+            write('Costo total: '), writeln(CostoTotal),
+            write('Duracion total (en dias): '), writeln(DuracionTotal)
+        )
     ),
     writeln('Regresando al menu administrativo...').
 
+% Predicado para obtener las actividades asociadas a un destino desde asociar_actividad.txt
+obtener_actividad_por_destino(Destino, ActividadesDestino) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', read, Stream),
+    read_actividades_destino(Stream, Destino, ActividadesDestino),
+    close(Stream).
 
-% Predicado auxiliar para mostrar la lista de actividades
+read_actividades_destino(Stream, Destino, Actividades) :-
+    read(Stream, Term),
+    (   Term \= end_of_file
+    ->  (   Term = asociar_actividad(DestinoActual, Actividad),
+            DestinoActual = Destino
+        ->  Actividades = [Actividad | Resto],
+            read_actividades_destino(Stream, Destino, Resto)
+        ;   read_actividades_destino(Stream, Destino, Actividades)
+        )
+    ;   Actividades = []).
+
+% Predicado para obtener los detalles de las actividades desde actividad.txt
+obtener_detalles_actividades([], []).
+obtener_detalles_actividades([Actividad | Resto], DetallesActividades) :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    buscar_detalles_actividad(Stream, Actividad, Detalles),
+    close(Stream),
+    (   Detalles = []
+    ->  DetallesActividades = RestoDetalles
+    ;   DetallesActividades = [Detalles | RestoDetalles]
+    ),
+    obtener_detalles_actividades(Resto, RestoDetalles).
+
+% Predicado auxiliar para buscar los detalles de una actividad en actividad.txt
+buscar_detalles_actividad(Stream, Actividad, Detalles) :-
+    read(Stream, Term),
+    (   Term \= end_of_file
+    ->  (   Term = actividad(ActividadActual, Costo, Duracion, Descripcion, Tipos),
+            ActividadActual = Actividad
+        ->  Detalles = [ActividadActual, Costo, Duracion, Descripcion, Tipos]
+        ;   buscar_detalles_actividad(Stream, Actividad, Detalles)
+        )
+    ;   Detalles = []).
+
+% Predicado auxiliar para mostrar la lista de actividades con detalles
 listar_actividades([]).
 listar_actividades([[Actividad, Costo, Duracion, Descripcion, Tipos] | Resto]) :-
     write('___________________________________'), nl,
@@ -223,12 +332,14 @@ listar_actividades([[Actividad, Costo, Duracion, Descripcion, Tipos] | Resto]) :
     write('___________________________________'), nl,
     listar_actividades(Resto).
 
-% Predicado auxiliar para calcular el costo y la duracion totales de las actividades
-calcular_totales(Actividades, CostoTotal, DuracionTotal) :-
-    findall(Costo, member([_, Costo, _, _, _], Actividades), Costos),
-    findall(Duracion, member([_, _, Duracion, _, _], Actividades), Duraciones),
-    sumlist(Costos, CostoTotal),
-    sumlist(Duraciones, DuracionTotal).
+% Predicado auxiliar para calcular el costo total y la duración total de las actividades
+calcular_totales([], 0, 0).
+calcular_totales([[_, Costo, Duracion, _, _] | Resto], CostoTotal, DuracionTotal) :-
+    calcular_totales(Resto, CostoResto, DuracionResto),
+    CostoTotal is CostoResto + Costo,
+    DuracionTotal is DuracionResto + Duracion.
+
+% ----------------------Agregar asociacion actividad a destino - opcion 3 FIN--------------------------------------------------------
 
 % Consultar actividades por tipo - opcion 3
 consultar_actividades_tipo :-
@@ -248,6 +359,8 @@ consultar_actividades_tipo :-
     ),
     writeln('Regresando al menu administrativo...').
 
+
+% -----------------por monto------------------------
 % Consultar actividades por precio - opcion 4
 consultar_actividades_precio :-
     write('Ingrese el monto: '),
@@ -276,6 +389,49 @@ consultar_actividades_precio :-
     writeln('Regresando al menu administrativo...').
 
 
+
+
+% ---------------------------auxiliares para validaciones------------------------
+
+% Validar que el nombre solo contenga letras y no espacios al inicio ni al final
+validar_nombre(Nombre) :-
+    string_chars(Nombre, Chars),  % Convierte el nombre en una lista de caracteres
+      forall(member(Char, Chars), (char_type(Char, alpha); Char = ' '; Char = '_')),  % Verifica que solo contenga letras o espacios
+    !.
+
+validar_nombre(_) :-
+    writeln('Error: El nombre solo debe contener letras y espacios.'),
+    fail.  % Falla si hay caracteres no permitidos
+
+
+% Validar que el costo solo sea un numero de tipo float y que sea positivo
+validar_costo(Costo) :-
+    number(Costo),        % Verifica que sea un numero
+    float(Costo),         % Verifica que sea un numero flotante (con decimales)
+    Costo >= 0,           % Verifica que sea positivo (mayor o igual a 0)
+    !.
+
+validar_costo(_) :-
+    writeln('Error: El costo debe ser un numero flotante positivo (e.g., 123.45).'),
+    fail.  % Falla si no es un número flotante positivo
+
+
+% Validar que la duracion solo sea un número entero no negativo
+validar_duracion(Duracion) :-
+    number(Duracion),  % Verifica que sea un número
+     Duracion >= 0,           % Verifica que sea positivo (mayor o igual a 0)
+    !.
+
+validar_duracion(_) :-
+    writeln('Error: la duracion debe ser un numero no negativo (e.g., 1 o 2).'),
+    fail. 
+
+
+
+
+
+
+
 procesar_opcion_administrativa(9).
 % Iniciar la aplicacion
 inicio :-
@@ -283,3 +439,7 @@ inicio :-
 
 % Ejecutar la aplicacion
 :- inicio.
+
+
+
+

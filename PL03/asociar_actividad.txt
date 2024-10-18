@@ -1,4 +1,3 @@
-asociar_actividad(paris, museo_louvre).
-asociar_actividad(paris, paseo_en_bici).
-asociar_actividad(nueva_york, paseo_en_bici).
-asociar_actividad(nueva_orleans,tleaton).
+asociar_actividad(costa_rica,baile).
+asociar_actividad(costa_rica,tennis).
+
