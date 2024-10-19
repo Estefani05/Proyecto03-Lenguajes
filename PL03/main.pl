@@ -1,5 +1,23 @@
 :- discontiguous procesar_opcion_administrativa/1.
 
+
+
+% Cargar relaciones desde un archivo
+cargar_relaciones :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\relaciones.txt', read, Stream),
+    cargar_relaciones_aux(Stream),
+    close(Stream).  % Aquí se debe colocar un punto.
+
+% Auxiliar para cargar relaciones
+cargar_relaciones_aux(Stream) :-
+    repeat,
+    read(Stream, Relacion),
+    (   Relacion == end_of_file
+    ->  !
+    ;   assert(Relacion),
+        fail
+    ).
+
 cargar_destino :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\destino.txt', read, Stream),
     cargar_destino_aux(Stream),
@@ -96,6 +114,16 @@ menu_administrativo :-
     ->  consultar_actividades_tipo
   ;  Opcion = 4
     ->  consultar_actividades_precio
+
+
+
+  ;  Opcion = 5
+    -> generar_itinerario
+
+
+  ;  Opcion = 8
+    ->  mostrar_estadisticas
+   
   ).
 
 
@@ -364,6 +392,9 @@ consultar_actividades_tipo :-
     ),
     writeln('Regresando al menú administrativo...').
 
+
+
+
 % Predicado para obtener actividades por tipo desde actividad.txt
 obtener_actividades_por_tipo(Tipo, Actividades) :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
@@ -380,12 +411,12 @@ read_actividades_por_tipo(Stream, Tipo, Actividades) :-
         ;   read_actividades_por_tipo(Stream, Tipo, Actividades)
         )
     ;   Actividades = []).
-
+% ---------------------------------------------------------------
 
 % -----------------por monto------------------------
 % Consultar actividades por precio - opcion 4
 consultar_actividades_precio :-
-    write('Ingrese el monto (numero flotante): '),
+    write('Ingrese el monto (numero entero): '),
     read(Monto),
     write('¿Desea consultar actividades mas baratas o mas caras? (b/c): '),
     read(Opcion),
@@ -409,6 +440,172 @@ consultar_actividades_precio :-
         write('Duración total (en dias): '), writeln(DuracionTotal)
     ),
     writeln('Regresando al menu administrativo...').
+
+% --------------------------- FIN cargar por precio------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% --------------------------Opcion 8 estadisticas.---------------------------------------
+
+
+% Cargar actividades desde actividad.txt
+cargar_actividades_estadistica :- 
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    cargar_actividades_auxa(Stream),
+    close(Stream).
+
+cargar_actividades_auxa(Stream) :- 
+    read(Stream, Term),
+    (   Term == end_of_file
+    ->  true
+    ;   ( Term = actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)
+        ->  assert(actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)),
+            cargar_actividades_aux(Stream)
+        ;   writeln('Error procesando la linea de actividades: '), writeln(Term),
+            cargar_actividades_aux(Stream)
+        )
+    ).
+
+% Cargar asociaciones desde asociar_actividad.txt
+cargar_asociacion_estadistica :- 
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', read, Stream),
+    leer_asociaciones_estadistica(Stream),
+    close(Stream).
+
+% Leer asociaciones desde el flujo
+leer_asociaciones_estadistica(Stream) :-
+    read_term(Stream, Term, []),
+    (   Term == end_of_file
+    ->  true
+    ;   (Term = asociar_actividad(Destino, Actividad) ->
+            assert(asociar_actividad(Destino, Actividad)),
+            leer_asociaciones_estadistica(Stream)  % Cambiar a leer_asociaciones_estadistica
+        ;   writeln('Error procesando la línea de asociaciones: '), writeln(Term),
+            leer_asociaciones_estadistica(Stream)  % Cambiar a leer_asociaciones_estadistica
+        )
+    ).
+
+
+% Cargar todos los datos necesarios para las estadísticas
+cargar_datos_estadisticas :- 
+    cargar_actividades_estadistica,
+    cargar_asociacion_estadistica.
+
+% 1. Obtener las 3 ciudades con mas actividades
+ciudades_mas_actividades(CiudadesMasActividades) :- 
+    findall(Ciudad, asociar_actividad(Ciudad, _), TodasLasCiudades),
+    list_to_set(TodasLasCiudades, CiudadesUnicas),
+    contar_actividades_por_ciudad(CiudadesUnicas, Contadores),
+    keysort(Contadores, ContadoresOrdenados),
+    reverse(ContadoresOrdenados, CiudadesOrdenadas),
+    findall(Ciudad, (nth1(_, CiudadesOrdenadas, Ciudad-Count), Count > 0), CiudadesMasActividades).
+
+contar_actividades_por_ciudad([], []).
+contar_actividades_por_ciudad([Ciudad | Resto], [Ciudad-Count | Contadores]) :- 
+    findall(Actividad, asociar_actividad(Ciudad, Actividad), ActividadesCiudad), 
+    length(ActividadesCiudad, Count),
+    contar_actividades_por_ciudad(Resto, Contadores).
+
+% 2. Obtener la actividad mas cara
+actividad_mas_cara(ActividadMasCara) :- 
+    findall(Costo-Actividad, actividad(Actividad, Costo, _, _, _), CostosActividades),
+    max_member(Costo-ActividadMasCara, CostosActividades).
+
+% 3. Obtener la actividad de menor duración
+actividad_menor_duracion(ActividadMenorDuracion) :- 
+    findall(Duracion-Actividad, actividad(Actividad, _, Duracion, _, _), DuracionesActividades),
+    min_member(Duracion-ActividadMenorDuracion, DuracionesActividades).
+
+    % 4. Obtener la categoría con mas actividades
+% Ejemplo de asociación de ID de categoría con nombre
+categoria_nombre(_14650, 'Aventura').
+categoria_nombre(_14651, 'Deporte').
+% Agrega mas asociaciones según sea necesario.
+
+% Obtener el nombre de la categoría a partir del ID
+obtener_nombre_categoria(CategoriaID, Nombre) :- 
+    categoria_nombre(CategoriaID, Nombre).
+
+% Contar actividades por categoría
+contar_actividades_por_categoria(CategoriaID, Count, ActividadesUnicas) :- 
+    findall(Actividad, 
+        (actividad(Actividad, _, _, _, Tipos), 
+         member(CategoriaID, Tipos)), 
+        ActividadesTemp),
+    sort(ActividadesTemp, ActividadesUnicas),  % Eliminar duplicados
+    length(ActividadesUnicas, Count),
+    Count > 0,  % Solo contar si hay actividades
+    obtener_nombre_categoria(CategoriaID, NombreCategoria),  % Obtener nombre
+    writeln(['Categoria:', NombreCategoria, 'Cantidad:', Count, 'Actividades:', ActividadesUnicas]).  % Mostrar categoría, cantidad y actividades
+
+% Obtener la categoría con mas actividades
+% Obtener la categoría con mas actividades
+categoria_mas_actividades(CategoriaMasActividades) :- 
+    writeln('Iniciando conteo de categorias...'),  % Chequeo inicial
+    findall(CategoriaID-Count-Actividades, contar_actividades_por_categoria(CategoriaID, Count, Actividades), CategoriasContadas),
+    writeln('Categorias contadas:'), writeln(CategoriasContadas),  % Mostrar categorías contadas
+    keysort(CategoriasContadas, CategoriasOrdenadas),
+    reverse(CategoriasOrdenadas, [CategoriaIDMasActividades-_|_]),
+    obtener_nombre_categoria(CategoriaIDMasActividades, CategoriaMasActividades),  % Asignar el nombre a CategoriaMasActividades
+    writeln('Categoria con mas actividades:'), writeln(CategoriaMasActividades).  % Mostrar categoría mas activa
+
+
+
+
+
+% Función principal para mostrar estadísticas
+mostrar_estadisticas :- 
+    cargar_datos_estadisticas,  % Cargar los datos antes de calcular las estadísticas
+    ciudades_mas_actividades(Ciudades),
+    writeln('Las 3 ciudades con mas actividades:'), writeln(Ciudades),
+    actividad_mas_cara(ActividadCara),
+    writeln('La actividad mas cara es:'), writeln(ActividadCara),
+    actividad_menor_duracion(ActividadCorta),
+    writeln('La actividad de menor duracion es:'), 
+    writeln(ActividadCorta),
+    categoria_mas_actividades(CategoriaMas),
+    writeln('La categoria con mas actividades es:'),
+    writeln(CategoriaMas).
+
+
+
+
+
+
 
 
 

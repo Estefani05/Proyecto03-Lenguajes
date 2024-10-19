@@ -1,3 +1,2 @@
 asociar_actividad(costa_rica,baile).
 asociar_actividad(costa_rica,tennis).
-
