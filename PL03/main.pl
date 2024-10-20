@@ -122,7 +122,8 @@ menu_administrativo :-
 
 
   ;  Opcion = 8
-    ->  mostrar_estadisticas
+    ->  mostrar_estadisticas,
+        mostrar_categoria_mas_frecuente
    
   ).
 
@@ -494,9 +495,9 @@ cargar_actividades_auxa(Stream) :-
     ->  true
     ;   ( Term = actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)
         ->  assert(actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)),
-            cargar_actividades_aux(Stream)
-        ;   writeln('Error procesando la linea de actividades: '), writeln(Term),
-            cargar_actividades_aux(Stream)
+            cargar_actividades_auxa(Stream)
+        ;   writeln('Error procesando la línea de actividades: '), writeln(Term),
+            cargar_actividades_auxa(Stream)
         )
     ).
 
@@ -513,12 +514,11 @@ leer_asociaciones_estadistica(Stream) :-
     ->  true
     ;   (Term = asociar_actividad(Destino, Actividad) ->
             assert(asociar_actividad(Destino, Actividad)),
-            leer_asociaciones_estadistica(Stream)  % Cambiar a leer_asociaciones_estadistica
+            leer_asociaciones_estadistica(Stream)
         ;   writeln('Error procesando la línea de asociaciones: '), writeln(Term),
-            leer_asociaciones_estadistica(Stream)  % Cambiar a leer_asociaciones_estadistica
+            leer_asociaciones_estadistica(Stream)
         )
     ).
-
 
 % Cargar todos los datos necesarios para las estadísticas
 cargar_datos_estadisticas :- 
@@ -532,7 +532,8 @@ ciudades_mas_actividades(CiudadesMasActividades) :-
     contar_actividades_por_ciudad(CiudadesUnicas, Contadores),
     keysort(Contadores, ContadoresOrdenados),
     reverse(ContadoresOrdenados, CiudadesOrdenadas),
-    findall(Ciudad, (nth1(_, CiudadesOrdenadas, Ciudad-Count), Count > 0), CiudadesMasActividades).
+    % Aquí se obtiene solo las 3 ciudades con mas actividades
+    findall(Ciudad, (nth1(Index, CiudadesOrdenadas, Ciudad-Count), Index =< 3, Count > 0), CiudadesMasActividades).
 
 contar_actividades_por_ciudad([], []).
 contar_actividades_por_ciudad([Ciudad | Resto], [Ciudad-Count | Contadores]) :- 
@@ -540,7 +541,7 @@ contar_actividades_por_ciudad([Ciudad | Resto], [Ciudad-Count | Contadores]) :-
     length(ActividadesCiudad, Count),
     contar_actividades_por_ciudad(Resto, Contadores).
 
-% 2. Obtener la actividad mas cara
+% 2. Obtener la actividad  cara
 actividad_mas_cara(ActividadMasCara) :- 
     findall(Costo-Actividad, actividad(Actividad, Costo, _, _, _), CostosActividades),
     max_member(Costo-ActividadMasCara, CostosActividades).
@@ -550,38 +551,65 @@ actividad_menor_duracion(ActividadMenorDuracion) :-
     findall(Duracion-Actividad, actividad(Actividad, _, Duracion, _, _), DuracionesActividades),
     min_member(Duracion-ActividadMenorDuracion, DuracionesActividades).
 
-    % 4. Obtener la categoría con mas actividades
-% Ejemplo de asociación de ID de categoría con nombre
-categoria_nombre(_14650, 'Aventura').
-categoria_nombre(_14651, 'Deporte').
-% Agrega mas asociaciones según sea necesario.
 
-% Obtener el nombre de la categoría a partir del ID
-obtener_nombre_categoria(CategoriaID, Nombre) :- 
-    categoria_nombre(CategoriaID, Nombre).
 
-% Contar actividades por categoría
-contar_actividades_por_categoria(CategoriaID, Count, ActividadesUnicas) :- 
+
+
+
+
+
+%  Obtener todas las categorías (incluyendo duplicados)
+obtener_categorias(Categorias) :-
+    findall(Categoria, 
+        (actividad(_, _, _, _, Tipos), member(Categoria, Tipos)), 
+        Categorias).  % No eliminar duplicados
+
+%  Contar apariciones de cada categoría
+contar_apariciones(Categorias, Resultados) :-
+    contar_apariciones_aux(Categorias, [], Resultados).
+
+contar_apariciones_aux([], Contadores, Contadores).
+contar_apariciones_aux([Categoria | Resto], ContadoresAcumulados, Resultados) :-
+    contar_categoria(Categoria, Count),
+    (   select(Categoria-_, ContadoresAcumulados, ContadoresSinCategoria)
+    ->  NewCount is Count + 1,
+        assertz(Categoria-NewCount),
+        contar_apariciones_aux(Resto, ContadoresSinCategoria, Resultados)
+    ;   assertz(Categoria-1),
+        contar_apariciones_aux(Resto, [Categoria-1 | ContadoresAcumulados], Resultados)
+    ).
+
+contar_categoria(Categoria, Count) :-
     findall(Actividad, 
         (actividad(Actividad, _, _, _, Tipos), 
-         member(CategoriaID, Tipos)), 
-        ActividadesTemp),
-    sort(ActividadesTemp, ActividadesUnicas),  % Eliminar duplicados
-    length(ActividadesUnicas, Count),
-    Count > 0,  % Solo contar si hay actividades
-    obtener_nombre_categoria(CategoriaID, NombreCategoria),  % Obtener nombre
-    writeln(['Categoria:', NombreCategoria, 'Cantidad:', Count, 'Actividades:', ActividadesUnicas]).  % Mostrar categoría, cantidad y actividades
+         member(Categoria, Tipos)), 
+        Actividades),
+    length(Actividades, Count).
 
-% Obtener la categoría con mas actividades
-% Obtener la categoría con mas actividades
-categoria_mas_actividades(CategoriaMasActividades) :- 
-    writeln('Iniciando conteo de categorias...'),  % Chequeo inicial
-    findall(CategoriaID-Count-Actividades, contar_actividades_por_categoria(CategoriaID, Count, Actividades), CategoriasContadas),
-    writeln('Categorias contadas:'), writeln(CategoriasContadas),  % Mostrar categorías contadas
-    keysort(CategoriasContadas, CategoriasOrdenadas),
-    reverse(CategoriasOrdenadas, [CategoriaIDMasActividades-_|_]),
-    obtener_nombre_categoria(CategoriaIDMasActividades, CategoriaMasActividades),  % Asignar el nombre a CategoriaMasActividades
-    writeln('Categoria con mas actividades:'), writeln(CategoriaMasActividades).  % Mostrar categoría mas activa
+%  Obtener la categoría (o categorías) mas frecuente
+categoria_mas_frecuente(CategoriasMasFrecuentes) :- 
+    obtener_categorias(Categorias),
+    contar_apariciones(Categorias, Contadores),
+    keysort(Contadores, ContadoresOrdenados),
+    reverse(ContadoresOrdenados, [CategoriaMasFrecuente-CountMasFrecuente | Resto]),
+    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas),
+    append([CategoriaMasFrecuente], CategoriasEmpatadas, CategoriasMasFrecuentes).
+
+encontrar_empates([], _Count, []).
+encontrar_empates([Categoria-Count | Resto], CountMasFrecuente, [Categoria | CategoriasEmpatadas]) :-
+    Count =:= CountMasFrecuente,
+    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas).
+encontrar_empates([_ | Resto], CountMasFrecuente, CategoriasEmpatadas) :-
+    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas).
+
+
+% Función principal para mostrar la categoría  frecuente
+mostrar_categoria_mas_frecuente :-
+    not(categoria_mas_frecuente(_)), % Verifica si ya se ha calculado
+    cargar_datos_estadisticas,
+    categoria_mas_frecuente(CategoriaMasFrecuente),
+    writeln('Categoria(s) mas frecuente(s):'), 
+    writeln(CategoriaMasFrecuente).
 
 
 
@@ -596,11 +624,7 @@ mostrar_estadisticas :-
     writeln('La actividad mas cara es:'), writeln(ActividadCara),
     actividad_menor_duracion(ActividadCorta),
     writeln('La actividad de menor duracion es:'), 
-    writeln(ActividadCorta),
-    categoria_mas_actividades(CategoriaMas),
-    writeln('La categoria con mas actividades es:'),
-    writeln(CategoriaMas).
-
+    writeln(ActividadCorta).
 
 
 
