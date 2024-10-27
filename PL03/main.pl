@@ -155,6 +155,7 @@ menu_administrativo :-
   ;  Opcion = 4
     ->  consultar_actividades_precio  % Consulta actividades por precio si la opción es 4
   ;  Opcion = 5
+    -> generar_itinerario
   ; Opcion = 6
     -> itinerario_por_dias
     -> generar_itinerario  % Genera un itinerario si la opción es 5
@@ -607,7 +608,6 @@ consultar_actividades_precio :-
 
 
 % ---------------------------Crear mobiliario por monto --------------
-
 % Filtrar actividades según las preferencias del usuario
 filtrar_actividades_monto(MontoMaximo, Categoria, CantidadPersonas, PreferenciaDuracion, ActividadesSeleccionadas) :-
     findall(Actividad, actividad(Actividad, _, _, _, _), TodasLasActividades),
@@ -618,33 +618,21 @@ filtrar_actividades_monto(MontoMaximo, Categoria, CantidadPersonas, PreferenciaD
     ).
 
 % Seleccionar actividades de acuerdo a las reglas
-seleccionar_actividades([], _, _, _, _, []).
+seleccionar_actividades([], _, _, _, _, []).  % No hay mas actividades
 
 seleccionar_actividades([Actividad | Resto], MontoMaximo, Categoria, CantidadPersonas, [ActividadDetalles | ActividadesSeleccionadas]) :-
     actividad(Actividad, Costo, Duracion, Descripcion, Tipos),
     CostoTotal is Costo * CantidadPersonas,
     CostoTotal =< MontoMaximo,
-    (   (PreferenciaDuracion == largo, Duracion >= 3) ; (PreferenciaDuracion == corto, Duracion =< 2) ), % ordenamiento
+    (   (PreferenciaDuracion == largo, Duracion >= 3) ; (PreferenciaDuracion == corto, Duracion =< 2) ),
     (   member(Categoria, Tipos) ; verificar_categoria_afines(Categoria, Tipos) ),
     ActividadDetalles = [Actividad, CostoTotal, Duracion, Descripcion, Tipos],
     seleccionar_actividades(Resto, MontoMaximo - CostoTotal, Categoria, CantidadPersonas, PreferenciaDuracion, ActividadesSeleccionadas).
-    
+
 % Verificar si la categoría es afín a alguna de las categorías de la actividad
 verificar_categoria_afines(Categoria, Tipos) :-
     relacion(Categoria, CategoriaAfines),
     member(CategoriaAfines, Tipos).
-
-% Ordenar actividades por duración
-ordenar_actividades(Actividades, PreferenciaDuracion, ActividadesOrdenadas) :-
-    findall((Duracion, Actividad), 
-        (member(ActividadDetalles, Actividades), 
-         ActividadDetalles = [Actividad, _, Duracion, _, _]),  % Captura Actividad y Duración
-        ActividadesConDuracion),
-    (   PreferenciaDuracion == largo
-    ->  sort(1, >, ActividadesConDuracion, ActividadesOrdenadasAux)  % Ordenar de mayor a menor
-    ;   sort(1, <, ActividadesConDuracion, ActividadesOrdenadasAux)  % Ordenar de menor a mayor
-    ),
-    findall(Actividad, member((_, Actividad), ActividadesOrdenadasAux), ActividadesOrdenadas).
 
 % Función para generar itinerario
 generar_itinerario :-
@@ -659,9 +647,8 @@ generar_itinerario :-
     cargar_relaciones,  % Cargar relaciones antes de filtrar actividades
     cargar_actividades,  % Cargar actividades
     filtrar_actividades_monto(MontoMaximo, Categoria, CantidadPersonas, PreferenciaDuracion, ActividadesSeleccionadas),
-    ordenar_actividades(ActividadesSeleccionadas, PreferenciaDuracion, ActividadesOrdenadas),
     writeln('Itinerario generado:'),
-    listar_actividades_monto(ActividadesOrdenadas).
+    listar_actividades_monto(ActividadesSeleccionadas).
 
 % Función para listar actividades mostrando solo el nombre, la duración y el costo total
 listar_actividades_monto([]).
@@ -672,6 +659,7 @@ listar_actividades_monto([[Actividad, CostoTotal, Duracion, _, _] | Resto]) :-
     write('Costo Total: '), writeln(CostoTotal),
     write('_'), nl,
     listar_actividades_monto(Resto).
+
 
 % --------------------------Crear mobiliario por dias-------------------------------------
 
@@ -709,7 +697,7 @@ mostrar_itinerario(Itinerario) :-
     (   Itinerario = []
     ->  write('No se encontraron actividades que coincidan con los criterios.')
     ;   forall(member(act(Nombre, Costo, Duracion, Descripcion, Tipos), Itinerario),
-               (format('Actividad: ~w, Costo: ~2f, Duracion: ~d, Descripcion: ~w, Tipos: ~w~n',
+               (format('Actividad: ~w, Precio: ~2f, Duracion: ~d, Descripcion: ~w, Categoria(s): ~w~n',
                        [Nombre, Costo, Duracion, Descripcion, Tipos])))).
 
 
