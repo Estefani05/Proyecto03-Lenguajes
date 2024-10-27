@@ -83,7 +83,7 @@ cargar_asociaciones :-
 % Propósito: Leer términos del flujo de entrada y asertarlos en la base de datos.
 % Entrada: Stream - un flujo de entrada abierto desde donde se leerán los términos.
 % Salida: Crea hechos asociar_actividad(Destino, Actividad) en la base de datos.
-%         Si se encuentra end_of_file, termina la lectura. Si hay un error de procesamiento, se imprime un mensaje.
+% Si se encuentra end_of_file, termina la lectura. Si hay un error de procesamiento, se imprime un mensaje.
 
 leer_asociaciones(Stream) :-
     read_term(Stream, Term, []),
@@ -104,7 +104,7 @@ leer_asociaciones(Stream) :-
 % Propósito: Proporcionar un menú interactivo para que el usuario elija opciones administrativas o salir del programa.
 % Entrada: Ninguna (la opción se lee de la entrada estándar).
 % Salida: Llama al menú administrativo si la opción es 1, o termina el programa si la opción es 2.
-%         Si la opción no es válida, solicita al usuario que intente de nuevo.
+% Si la opción no es válida, solicita al usuario que intente de nuevo.
 
 menu_principal :-
   repeat,
@@ -127,7 +127,7 @@ menu_principal :-
 % Propósito: Proporcionar un menú interactivo para que el usuario elija opciones administrativas diversas.
 % Entrada: Ninguna (la opción se lee de la entrada estándar).
 % Salida: Llama a diferentes predicados según la opción seleccionada, permitiendo agregar hechos, consultar información,
-generar itinerarios, mostrar estadísticas, entre otras opciones.
+% generar itinerarios, mostrar estadísticas, entre otras opciones.
 
 menu_administrativo :-
   repeat,
@@ -620,7 +620,7 @@ seleccionar_actividades([Actividad | Resto], MontoMaximo, Categoria, CantidadPer
     actividad(Actividad, Costo, Duracion, Descripcion, Tipos),
     CostoTotal is Costo * CantidadPersonas,
     CostoTotal =< MontoMaximo,
-    (   (PreferenciaDuracion == largo, Duracion >= 3) ; (PreferenciaDuracion == corto, Duracion =< 2) ),
+    (   (PreferenciaDuracion == largo, Duracion >= 3) ; (PreferenciaDuracion == corto, Duracion =< 2) ), % ordenamiento
     (   member(Categoria, Tipos) ; verificar_categoria_afines(Categoria, Tipos) ),
     ActividadDetalles = [Actividad, CostoTotal, Duracion, Descripcion, Tipos],
     seleccionar_actividades(Resto, MontoMaximo - CostoTotal, Categoria, CantidadPersonas, PreferenciaDuracion, ActividadesSeleccionadas).
@@ -811,57 +811,27 @@ actividad_menor_duracion(ActividadMenorDuracion) :-
 % Salida:
 % - Devuelve una lista de categorías, que puede incluir duplicados.
 
-obtener_categorias(Categorias) :-
-    findall(Categoria, 
-        (actividad(_, _, _, _, Tipos), member(Categoria, Tipos)), 
-        Categorias).  % Recolecta todas las categorías, no eliminando duplicados
-
-%  Contar apariciones de cada categoría
-contar_apariciones(Categorias, Resultados) :-
-    contar_apariciones_aux(Categorias, [], Resultados).
-
-contar_apariciones_aux([], Contadores, Contadores).
-contar_apariciones_aux([Categoria | Resto], ContadoresAcumulados, Resultados) :-
-    contar_categoria(Categoria, Count),
-    (   select(Categoria-_, ContadoresAcumulados, ContadoresSinCategoria)
-    ->  NewCount is Count + 1,
-        assertz(Categoria-NewCount),
-        contar_apariciones_aux(Resto, ContadoresSinCategoria, Resultados)
-    ;   assertz(Categoria-1),
-        contar_apariciones_aux(Resto, [Categoria-1 | ContadoresAcumulados], Resultados)
-    ).
-
-contar_categoria(Categoria, Count) :-
-    findall(Actividad, 
-        (actividad(Actividad, _, _, _, Tipos), 
-         member(Categoria, Tipos)), 
-        Actividades),
-    length(Actividades, Count).
-
-%  Obtener la categoría (o categorías) mas frecuente
-categoria_mas_frecuente(CategoriasMasFrecuentes) :- 
-    obtener_categorias(Categorias),
-    contar_apariciones(Categorias, Contadores),
-    keysort(Contadores, ContadoresOrdenados),
-    reverse(ContadoresOrdenados, [CategoriaMasFrecuente-CountMasFrecuente | Resto]),
-    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas),
-    append([CategoriaMasFrecuente], CategoriasEmpatadas, CategoriasMasFrecuentes).
-
-encontrar_empates([], _Count, []).
-encontrar_empates([Categoria-Count | Resto], CountMasFrecuente, [Categoria | CategoriasEmpatadas]) :-
-    Count =:= CountMasFrecuente,
-    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas).
-encontrar_empates([_ | Resto], CountMasFrecuente, CategoriasEmpatadas) :-
-    encontrar_empates(Resto, CountMasFrecuente, CategoriasEmpatadas).
-
-
-% Función principal para mostrar la categoría  frecuente
+% Funcion principal para mostrar la categoria mas frecuente
 mostrar_categoria_mas_frecuente :-
-    not(categoria_mas_frecuente(_)), % Verifica si ya se ha calculado
-    cargar_datos_estadisticas,
-    categoria_mas_frecuente(CategoriaMasFrecuente),
-    writeln('Categoria(s) mas frecuente(s):'), 
-    writeln(CategoriaMasFrecuente).
+    findall(Categoria, (actividad(_, _, _, _, Categorias), member(Categoria, Categorias)), ListaCategorias),
+    contar_frecuencias(ListaCategorias, Frecuencias),
+    encontrar_maximo(Frecuencias, MaxCategoria),
+    write('La categoria mas frecuente es: '), write(MaxCategoria), nl.
+
+% Contar las frecuencias de cada categoria
+contar_frecuencias(Categorias, Frecuencias) :-
+    sort(Categorias, CategoriasUnicas),
+    findall((Categoria, Cuenta), (member(Categoria, CategoriasUnicas), 
+                                    aggregate(count, member(Categoria, Categorias), Cuenta)), Frecuencias).
+
+% Encontrar la categoria con la maxima frecuencia
+encontrar_maximo(Frecuencias, MaxCategoria) :-
+    Frecuencias \= [],
+    sort(2, @>=, Frecuencias, [(MaxCategoria, _)|_]).
+
+% Manejo de errores en caso de que no haya categorias
+encontrar_maximo([], 'No hay categorias disponibles.').
+
 
 % Función principal para mostrar estadísticas
 mostrar_estadisticas :- 

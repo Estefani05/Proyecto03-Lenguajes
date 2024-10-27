@@ -1,5 +1,5 @@
-actividad(ciclismo_nocturno,10000.0,1,'Tour nocturno en bici de ruta',['arte,arquitectura']).
+actividad(ciclismo_nocturno,10000.0,1,'Tour nocturno en bici de ruta',['arte,arte']).
 actividad(tennis,5000.0,1,'Deporte entretenido',['arte']).
 actividad(baile,1000.0,1,'bailar_salsa',['arquitectura']).
-actividad(natacion,200.0,2,'Es muy refrescante',['arquitectura']).
+actividad(natacion,200.0,2,'Es muy refrescante',['arte']).
 actividad(bateball,2,3,'jupiter',['dancehall']).
