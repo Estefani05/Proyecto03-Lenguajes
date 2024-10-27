@@ -155,11 +155,15 @@ menu_administrativo :-
   ;  Opcion = 4
     ->  consultar_actividades_precio  % Consulta actividades por precio si la opción es 4
   ;  Opcion = 5
+  ; Opcion = 6
+    -> itinerario_por_dias
     -> generar_itinerario  % Genera un itinerario si la opción es 5
   ;  Opcion = 8
     ->  mostrar_estadisticas,  % Muestra estadisticas si la opción es 8
         mostrar_categoria_mas_frecuente  % Muestra la categoria mas frecuente si la opción es 8
   ).
+
+
 
 % Menu agregar hechos
 % Proposito: Proporcionar un menu interactivo para que el usuario elija entre agregar destinos, actividades o asociar actividades a destinos.
@@ -669,6 +673,47 @@ listar_actividades_monto([[Actividad, CostoTotal, Duracion, _, _] | Resto]) :-
     write('_'), nl,
     listar_actividades_monto(Resto).
 
+% --------------------------Crear mobiliario por dias-------------------------------------
+
+itinerario_por_dias :- 
+    cargar_actividades,  % Cargar actividades desde el archivo al iniciar
+    write('Ingrese la cantidad maxima de dias: '),
+    read(MaxDias),
+    write('Ingrese la categoria de preferencia: '),
+    read(Categoria),
+    generar_itinerario_dias(MaxDias, Categoria, Itinerario),
+    mostrar_itinerario(Itinerario),
+    write('¿Desea generar otro itinerario? (s/n): '),
+    read(Respuesta),
+    (Respuesta = s ->
+        itinerario_por_dias  % Si la respuesta es sí, llamar de nuevo a itinerario_por_dias
+    ; 
+        menu_administrativo  % Si la respuesta es no, ir al menú principal
+    ).
+% Generar itinerario basado en la duracion igual a la entrada
+generar_itinerario_dias(MaxDias, Categoria, Itinerario) :-
+    findall(act(Nombre, Costo, Duracion, Descripcion, Tipos),
+            actividad(Nombre, Costo, Duracion, Descripcion, Tipos),
+            TodasActividades),
+    % Usar setof para evitar duplicados
+    setof(act(Nombre, Costo, Duracion, Descripcion, Tipos),
+          ( member(act(Nombre, Costo, Duracion, Descripcion, Tipos), TodasActividades),
+            Duracion =< MaxDias, % Solo incluir actividades que se pueden hacer en los dias solicitados
+            member(Categoria, Tipos) % Asegurarse de que la actividad sea de la categoria solicitada
+          ),
+          Itinerario).
+
+% Mostrar el itinerario
+mostrar_itinerario(Itinerario) :-
+    write('Itinerario generado:'), nl,
+    (   Itinerario = []
+    ->  write('No se encontraron actividades que coincidan con los criterios.')
+    ;   forall(member(act(Nombre, Costo, Duracion, Descripcion, Tipos), Itinerario),
+               (format('Actividad: ~w, Costo: ~2f, Duracion: ~d, Descripcion: ~w, Tipos: ~w~n',
+                       [Nombre, Costo, Duracion, Descripcion, Tipos])))).
+
+
+
 
 
 
@@ -816,7 +861,10 @@ mostrar_categoria_mas_frecuente :-
     findall(Categoria, (actividad(_, _, _, _, Categorias), member(Categoria, Categorias)), ListaCategorias),
     contar_frecuencias(ListaCategorias, Frecuencias),
     encontrar_maximo(Frecuencias, MaxCategoria),
-    write('La categoria mas frecuente es: '), write(MaxCategoria), nl.
+    write('La categoria mas frecuente es: '),
+    write(MaxCategoria), nl, menu_administrativo.
+ 
+    
 
 % Contar las frecuencias de cada categoria
 contar_frecuencias(Categorias, Frecuencias) :-
