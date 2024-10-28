@@ -210,13 +210,20 @@ articulo_o_irrelevante(Palabra) :-
     'ni', 'o', 'ya', 'si', 'cuando', 'donde', 
     'como', 'quien', 'qué', 'cuál', 'cuándo',
     'mientras', 'para', 'antes', 'después', 
-    'de', 'a través', 'junto', 'fuera', 'delante']).
+    'de', 'a través', 'junto', 'fuera', 'delante',
+      'a', 'el', 'la', 'y', 'de', 'en', 
+    'que', 'por', 'con', 'un', 'una', 
+    'los', 'las', 'como', 'quisiera', 
+    'ir', 'me', 'gustaria', 'encantaria', 
+    'quiero', 'vamos', 'vayamos', 'gusta', 
+    'tener', 'actividad', 'relacion', 'relacionada', 
+    'al', 'ir']).
 
 
 % Buscar la actividad que coincide con la frase ingresada
 buscar_actividad_frase(Frase) :-
     normalizar_frase(Frase, FraseNormalizada),  % Normaliza la frase
-    format('Frase normalizada: ~w~n', [FraseNormalizada]),  % Imprimir frase normalizada para depuración
+    format('Frase normalizada: ~w~n', [FraseNormalizada]),  
     findall(Resultado, 
             (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
                 atom_string(Descripcion, DescString),
@@ -230,7 +237,7 @@ buscar_actividad_frase(Frase) :-
                 ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la categoría encontrada
                 )
             ), 
-            Resultados),  % Acumular todas las coincidencias
+            Resultados),  % Acumula todas las coincidencias
 
     % Filtrar resultados duplicados
     list_to_set(Resultados, ResultadosUnicos),  % Eliminar duplicados

@@ -1,7 +1,0 @@
-asociar_actividad(costa_rica,baile).
-asociar_actividad(europa,natacion).
-
-
-
-
-
