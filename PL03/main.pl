@@ -165,112 +165,6 @@ menu_administrativo :-
         mostrar_categoria_mas_frecuente  % Muestra la categoria mas frecuente si la opción es 8
   ).
 
-% Cargar las actividades desde el archivo
-cargar_actividades_frase :-
-    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
-    leer_actividades_frase(Stream),
-    close(Stream).
-
-% Leer actividades del archivo
-leer_actividades_frase(Stream) :-
-    read(Stream, Line),
-    (   Line == end_of_file
-    ->  true
-    ;   assert(Line), % Almacena la actividad leída
-        leer_actividades_frase(Stream)
-    ).
-
-% Solicitar frase al usuario
-solicitar_frase :-
-    cargar_actividades_frase,
-    write('Por favor, ingrese una frase: '),
-    read(Frase),  % Usa read para obtener la frase
-    downcase_atom(Frase, FraseLower),  % Convertir a minúsculas
-    buscar_actividad_frase(FraseLower).
-
-% Normalizar la frase eliminando artículos y palabras irrelevantes
-normalizar_frase(Frase, FraseNormalizada) :- 
-    split_string(Frase, " ", "", Palabras),  
-    exclude(articulo_o_irrelevante, Palabras, PalabrasFiltradas),  
-    format('Palabras filtradas: ~w~n', [PalabrasFiltradas]),  % Imprimir palabras filtradas
-    atomic_list_concat(PalabrasFiltradas, ' ', FraseNormalizada). 
-
-
-% Predicado para identificar artículos y palabras irrelevantes
-articulo_o_irrelevante(Palabra) :-
-    downcase_atom(Palabra, PalabraLower),
-     member(PalabraLower, [
-    'este', 'esta', 'esto', 'ese', 'esa', 'eso', 
-    'aquello', 'toda', 'todo', 'cualquier', 
-    'cada', 'mucho', 'poco', 'más', 'menos', 
-    'sobre', 'tras', 'ante', 'bajo', 'hacia', 
-    'hasta', 'entre', 'según', 'durante', 
-    'contra', 'sin', 'excepto', 'más allá', 
-    'además', 'aunque', 'sin embargo', 'pero', 
-    'ni', 'o', 'ya', 'si', 'cuando', 'donde', 
-    'como', 'quien', 'qué', 'cuál', 'cuándo',
-    'mientras', 'para', 'antes', 'después', 
-    'de', 'a través', 'junto', 'fuera', 'delante',
-      'a', 'el', 'la', 'y', 'de', 'en', 
-    'que', 'por', 'con', 'un', 'una', 
-    'los', 'las', 'como', 'quisiera', 
-    'ir', 'me', 'gustaria', 'encantaria', 
-    'quiero', 'vamos', 'vayamos', 'gusta', 
-    'tener', 'actividad', 'relacion', 'relacionada', 
-    'al', 'ir']).
-
-
-% Buscar la actividad que coincide con la frase ingresada
-buscar_actividad_frase(Frase) :-
-    normalizar_frase(Frase, FraseNormalizada),  % Normaliza la frase
-    format('Frase normalizada: ~w~n', [FraseNormalizada]),  
-    findall(Resultado, 
-            (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
-                atom_string(Descripcion, DescString),
-                downcase_atom(DescString, DescStringLower),  % Convertir descripción a minúsculas
-                downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
-                (   sub_string(DescStringLower, _, _, _, FraseNormalizadaLower)  % Compara la frase normalizada con la descripción
-                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la descripción encontrada
-                ;   member(Categoria, Dias),  % Buscar por categorías
-                    downcase_atom(Categoria, CategoriaLower),
-                    sub_string(CategoriaLower, _, _, _, FraseNormalizadaLower)  % Compara la categoría con la frase normalizada
-                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la categoría encontrada
-                )
-            ), 
-            Resultados),  % Acumula todas las coincidencias
-
-    % Filtrar resultados duplicados
-    list_to_set(Resultados, ResultadosUnicos),  % Eliminar duplicados
-
-    (   ResultadosUnicos \= []
-    ->  mostrar_resultados(ResultadosUnicos)
-    ;   format('Error: No se encontró ninguna actividad que coincida con: ~w~n', [Frase])
-    ).
-
-    
-
-% Mostrar todos los resultados encontrados
-mostrar_resultados([]).
-mostrar_resultados([(Descripcion, Nombre, Costo, Tipo, Dias) | Resto]) :-
-    write("-----------------------------------------------"), nl,
-    write('Descripcion encontrada: '), write(Descripcion), nl,
-    write('Nombre de actividad: '), write(Nombre), nl,
-    write('Costo: '), write(Costo), nl,
-    write('Duracion en dias: '), write(Tipo), nl,
-    write('Categoria(s): '), write(Dias), nl,
-    write("-----------------------------------------------"), nl,
-    write("-----------------------------------------------"), nl,
-    mostrar_resultados(Resto).
-
-
-% Mostrar todos los destinos encontrados
-mostrar_resultados_destinos([]).
-mostrar_resultados_destinos([(NombreDestino, DescripcionDestino) | Resto]) :-
-    write('Destino encontrado: '), write(NombreDestino), nl,
-    write('Descripcion del destino: '), write(DescripcionDestino), nl,
-    write("-----------------------------------------------"), nl,
-    mostrar_resultados_destinos(Resto).
-
 % Menu agregar hechos
 % Proposito: Proporcionar un menu interactivo para que el usuario elija entre agregar destinos, actividades o asociar actividades a destinos.
 % Entrada: Ninguna (la opcion se lee de la entrada estandar).
@@ -766,7 +660,7 @@ listar_actividades_monto([[Actividad, CostoTotal, Duracion, _, _] | Resto]) :-
     listar_actividades_monto(Resto).
 
 
-% --------------------------Crear mobiliario por dias-------------------------------------
+% --------------------------7.Crear mobiliario por dias-------------------------------------
 
 itinerario_por_dias :- 
     cargar_actividades,  % Cargar actividades desde el archivo al iniciar
@@ -804,81 +698,114 @@ mostrar_itinerario(Itinerario) :-
     ;   forall(member(act(Nombre, Costo, Duracion, Descripcion, Tipos), Itinerario),
                (format('Actividad: ~w, Precio: ~2f, Duracion: ~d, Descripcion: ~w, Categoria(s): ~w~n',
                        [Nombre, Costo, Duracion, Descripcion, Tipos])))).
+% =====================================Opcion 7 Frase=======================================================================================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% --------------------------Opcion 8 estadisticas.---------------------------------------
-
-
-% Cargar actividades desde actividad.txt
-cargar_actividades_estadistica :- 
+% Cargar las actividades desde el archivo
+cargar_actividades_frase :-
     open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
-    cargar_actividades_auxa(Stream),
+    leer_actividades_frase(Stream),
     close(Stream).
 
-cargar_actividades_auxa(Stream) :- 
-    read(Stream, Term),
-    (   Term == end_of_file
+% Leer actividades del archivo
+leer_actividades_frase(Stream) :-
+    read(Stream, Line),
+    (   Line == end_of_file
     ->  true
-    ;   ( Term = actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)
-        ->  assert(actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)),
-            cargar_actividades_auxa(Stream)
-        ;   writeln('Error procesando la línea de actividades: '), writeln(Term),
-            cargar_actividades_auxa(Stream)
-        )
+    ;   assert(Line), % Almacena la actividad leída
+        leer_actividades_frase(Stream)
     ).
 
-% Cargar asociaciones desde asociar_actividad.txt
-cargar_asociacion_estadistica :- 
-    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', read, Stream),
-    leer_asociaciones_estadistica(Stream),
-    close(Stream).
+% Solicitar frase al usuario
+solicitar_frase :-
+    cargar_actividades_frase,
+    write('Por favor, ingrese una frase: '),
+    read(Frase),  % Usa read para obtener la frase
+    downcase_atom(Frase, FraseLower),  % Convertir a minúsculas
+    buscar_actividad_frase(FraseLower).
 
-% Leer asociaciones desde el flujo
-leer_asociaciones_estadistica(Stream) :-
-    read_term(Stream, Term, []),
-    (   Term == end_of_file
-    ->  true
-    ;   (Term = asociar_actividad(Destino, Actividad) ->
-            assert(asociar_actividad(Destino, Actividad)),
-            leer_asociaciones_estadistica(Stream)
-        ;   writeln('Error procesando la línea de asociaciones: '), writeln(Term),
-            leer_asociaciones_estadistica(Stream)
-        )
+% Normalizar la frase eliminando artículos y palabras irrelevantes
+normalizar_frase(Frase, FraseNormalizada) :- 
+    split_string(Frase, " ", "", Palabras),  
+    exclude(articulo_o_irrelevante, Palabras, PalabrasFiltradas),  
+    format('Palabras filtradas: ~w~n', [PalabrasFiltradas]),  % Imprimir palabras filtradas
+    atomic_list_concat(PalabrasFiltradas, ' ', FraseNormalizada). 
+
+
+% Predicado para identificar artículos y palabras irrelevantes
+articulo_o_irrelevante(Palabra) :-
+    downcase_atom(Palabra, PalabraLower),
+     member(PalabraLower, [
+    'este', 'esta', 'esto', 'ese', 'esa', 'eso', 
+    'aquello', 'toda', 'todo', 'cualquier', 
+    'cada', 'mucho', 'poco', 'más', 'menos', 
+    'sobre', 'tras', 'ante', 'bajo', 'hacia', 
+    'hasta', 'entre', 'según', 'durante', 
+    'contra', 'sin', 'excepto', 'más allá', 
+    'además', 'aunque', 'sin embargo', 'pero', 
+    'ni', 'o', 'ya', 'si', 'cuando', 'donde', 
+    'como', 'quien', 'qué', 'cuál', 'cuándo',
+    'mientras', 'para', 'antes', 'después', 
+    'de', 'a través', 'junto', 'fuera', 'delante',
+      'a', 'el', 'la', 'y', 'de', 'en', 
+    'que', 'por', 'con', 'un', 'una', 
+    'los', 'las', 'como', 'quisiera', 
+    'ir', 'me', 'gustaria', 'encantaria', 
+    'quiero', 'vamos', 'vayamos', 'gusta', 
+    'tener', 'actividad', 'relacion', 'relacionada', 
+    'al', 'ir']).
+
+
+% Buscar la actividad que coincide con la frase ingresada
+buscar_actividad_frase(Frase) :-
+    normalizar_frase(Frase, FraseNormalizada),  % Normaliza la frase
+    format('Frase normalizada: ~w~n', [FraseNormalizada]),  
+    findall(Resultado, 
+            (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
+                atom_string(Descripcion, DescString),
+                downcase_atom(DescString, DescStringLower),  % Convertir descripción a minúsculas
+                downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
+                (   sub_string(DescStringLower, _, _, _, FraseNormalizadaLower)  % Compara la frase normalizada con la descripción
+                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la descripción encontrada
+                ;   member(Categoria, Dias),  % Buscar por categorías
+                    downcase_atom(Categoria, CategoriaLower),
+                    sub_string(CategoriaLower, _, _, _, FraseNormalizadaLower)  % Compara la categoría con la frase normalizada
+                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la categoría encontrada
+                )
+            ), 
+            Resultados),  % Acumula todas las coincidencias
+
+    % Filtrar resultados duplicados
+    list_to_set(Resultados, ResultadosUnicos),  % Eliminar duplicados
+
+    (   ResultadosUnicos \= []
+    ->  mostrar_resultados(ResultadosUnicos)
+    ;   format('Error: No se encontró ninguna actividad que coincida con: ~w~n', [Frase])
     ).
+
+    
+
+% Mostrar todos los resultados encontrados
+mostrar_resultados([]).
+mostrar_resultados([(Descripcion, Nombre, Costo, Tipo, Dias) | Resto]) :-
+    write("-----------------------------------------------"), nl,
+    write('Descripcion encontrada: '), write(Descripcion), nl,
+    write('Nombre de actividad: '), write(Nombre), nl,
+    write('Costo: '), write(Costo), nl,
+    write('Duracion en dias: '), write(Tipo), nl,
+    write('Categoria(s): '), write(Dias), nl,
+    write("-----------------------------------------------"), nl,
+    write("-----------------------------------------------"), nl,
+    mostrar_resultados(Resto).
+
+
+% Mostrar todos los destinos encontrados
+mostrar_resultados_destinos([]).
+mostrar_resultados_destinos([(NombreDestino, DescripcionDestino) | Resto]) :-
+    write('Destino encontrado: '), write(NombreDestino), nl,
+    write('Descripcion del destino: '), write(DescripcionDestino), nl,
+    write("-----------------------------------------------"), nl,
+    mostrar_resultados_destinos(Resto).
+% --------------------------Opcion 8 estadisticas.---------------------------------------
 
 % Cargar todos los datos necesarios para las estadísticas
 cargar_datos_estadisticas :- 
@@ -984,6 +911,47 @@ mostrar_estadisticas :-
     actividad_menor_duracion(ActividadCorta),
     writeln('La actividad de menor duracion es:'), 
     writeln(ActividadCorta).
+
+
+
+
+
+    % Cargar actividades desde actividad.txt
+cargar_actividades_estadistica :- 
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    cargar_actividades_auxa(Stream),
+    close(Stream).
+
+cargar_actividades_auxa(Stream) :- 
+    read(Stream, Term),
+    (   Term == end_of_file
+    ->  true
+    ;   ( Term = actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)
+        ->  assert(actividad(Nombre, CostoNum, DuracionNum, DescripcionAtom, ListaTipo)),
+            cargar_actividades_auxa(Stream)
+        ;   writeln('Error procesando la línea de actividades: '), writeln(Term),
+            cargar_actividades_auxa(Stream)
+        )
+    ).
+
+% Cargar asociaciones desde asociar_actividad.txt
+cargar_asociacion_estadistica :- 
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\asociar_actividad.txt', read, Stream),
+    leer_asociaciones_estadistica(Stream),
+    close(Stream).
+
+% Leer asociaciones desde el flujo
+leer_asociaciones_estadistica(Stream) :-
+    read_term(Stream, Term, []),
+    (   Term == end_of_file
+    ->  true
+    ;   (Term = asociar_actividad(Destino, Actividad) ->
+            assert(asociar_actividad(Destino, Actividad)),
+            leer_asociaciones_estadistica(Stream)
+        ;   writeln('Error procesando la línea de asociaciones: '), writeln(Term),
+            leer_asociaciones_estadistica(Stream)
+        )
+    ).
 
 % ---------------------------auxiliares para validaciones------------------------
 
