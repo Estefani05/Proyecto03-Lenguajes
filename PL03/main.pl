@@ -200,39 +200,69 @@ normalizar_frase(Frase, FraseNormalizada) :-
 articulo_o_irrelevante(Palabra) :-
     downcase_atom(Palabra, PalabraLower),
      member(PalabraLower, [
-        'a', 'el', 'la', 'y', 'de', 'en',
-        'que', 'por', 'con', 'un', 'una',
-        'los', 'las', 'como', 'quisiera',
-        'ir', 'me','gustaria','encantaria',
-        'quiero', 'vamos','vayamos','gusta']).
+    'este', 'esta', 'esto', 'ese', 'esa', 'eso', 
+    'aquello', 'toda', 'todo', 'cualquier', 
+    'cada', 'mucho', 'poco', 'más', 'menos', 
+    'sobre', 'tras', 'ante', 'bajo', 'hacia', 
+    'hasta', 'entre', 'según', 'durante', 
+    'contra', 'sin', 'excepto', 'más allá', 
+    'además', 'aunque', 'sin embargo', 'pero', 
+    'ni', 'o', 'ya', 'si', 'cuando', 'donde', 
+    'como', 'quien', 'qué', 'cuál', 'cuándo',
+    'mientras', 'para', 'antes', 'después', 
+    'de', 'a través', 'junto', 'fuera', 'delante']).
+
 
 % Buscar la actividad que coincide con la frase ingresada
 buscar_actividad_frase(Frase) :-
     normalizar_frase(Frase, FraseNormalizada),  % Normaliza la frase
     format('Frase normalizada: ~w~n', [FraseNormalizada]),  % Imprimir frase normalizada para depuración
-    (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
-        atom_string(Descripcion, DescString),
-        downcase_atom(DescString, DescStringLower),  % Convertir descripción a minúsculas
-        downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
-        sub_string(DescStringLower, _, _, _, FraseNormalizadaLower)  % Compara la frase normalizada con la descripción
-    ->  write('Descripción encontrada: '), write(DescString), nl,
-        write('Nombre de actividad: '), write(Nombre), nl,
-        write('Costo: '), write(Costo), nl,
-        write('Duracion en dias: '), write(Tipo), nl,
-        write('Categoria(s): '), write(Dias), nl
-    ;   actividad(Nombre, Costo, Tipo, Descripcion, Dias),  % Buscar por categorías
-        member(Categoria, Dias),
-        downcase_atom(Categoria, CategoriaLower),
-        downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
-        sub_string(CategoriaLower, _, _, _, FraseNormalizadaLower)  % Compara la categoría con la frase normalizada
-    ->  write('Categoría encontrada: '), write(Categoria), nl,
-        write('Nombre de actividad: '), write(Nombre), nl,
-        write('Costo: '), write(Costo), nl,
-        write('Duracion en dias: '), write(Tipo), nl,
-        write('Descripción: '), write(Descripcion), nl
+    findall(Resultado, 
+            (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
+                atom_string(Descripcion, DescString),
+                downcase_atom(DescString, DescStringLower),  % Convertir descripción a minúsculas
+                downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
+                (   sub_string(DescStringLower, _, _, _, FraseNormalizadaLower)  % Compara la frase normalizada con la descripción
+                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la descripción encontrada
+                ;   member(Categoria, Dias),  % Buscar por categorías
+                    downcase_atom(Categoria, CategoriaLower),
+                    sub_string(CategoriaLower, _, _, _, FraseNormalizadaLower)  % Compara la categoría con la frase normalizada
+                ->  Resultado = (Descripcion, Nombre, Costo, Tipo, Dias)  % Guardar la categoría encontrada
+                )
+            ), 
+            Resultados),  % Acumular todas las coincidencias
+
+    % Filtrar resultados duplicados
+    list_to_set(Resultados, ResultadosUnicos),  % Eliminar duplicados
+
+    (   ResultadosUnicos \= []
+    ->  mostrar_resultados(ResultadosUnicos)
     ;   format('Error: No se encontró ninguna actividad que coincida con: ~w~n', [Frase])
     ).
 
+    
+
+% Mostrar todos los resultados encontrados
+mostrar_resultados([]).
+mostrar_resultados([(Descripcion, Nombre, Costo, Tipo, Dias) | Resto]) :-
+    write("-----------------------------------------------"), nl,
+    write('Descripcion encontrada: '), write(Descripcion), nl,
+    write('Nombre de actividad: '), write(Nombre), nl,
+    write('Costo: '), write(Costo), nl,
+    write('Duracion en dias: '), write(Tipo), nl,
+    write('Categoria(s): '), write(Dias), nl,
+    write("-----------------------------------------------"), nl,
+    write("-----------------------------------------------"), nl,
+    mostrar_resultados(Resto).
+
+
+% Mostrar todos los destinos encontrados
+mostrar_resultados_destinos([]).
+mostrar_resultados_destinos([(NombreDestino, DescripcionDestino) | Resto]) :-
+    write('Destino encontrado: '), write(NombreDestino), nl,
+    write('Descripcion del destino: '), write(DescripcionDestino), nl,
+    write("-----------------------------------------------"), nl,
+    mostrar_resultados_destinos(Resto).
 
 % Menu agregar hechos
 % Proposito: Proporcionar un menu interactivo para que el usuario elija entre agregar destinos, actividades o asociar actividades a destinos.
