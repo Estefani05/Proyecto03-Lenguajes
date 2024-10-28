@@ -1,4 +1,4 @@
-destino(costa_rica,caluroso_pero_hermoso).
-destino(paris,encantador).
-destino(espana,toros).
-destino(mexico,'Muy hermoso').
+destino(costa_rica,'montaña').
+destino(paris,'capital').
+destino(espana,'toros').
+destino(mexico,'montaña').

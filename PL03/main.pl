@@ -158,12 +158,80 @@ menu_administrativo :-
     -> generar_itinerario
   ; Opcion = 6
     -> itinerario_por_dias
-    -> generar_itinerario  % Genera un itinerario si la opción es 5
+  ; Opcion = 7
+  -> solicitar_frase
   ;  Opcion = 8
     ->  mostrar_estadisticas,  % Muestra estadisticas si la opción es 8
         mostrar_categoria_mas_frecuente  % Muestra la categoria mas frecuente si la opción es 8
   ).
 
+% Cargar las actividades desde el archivo
+cargar_actividades_frase :-
+    open('C:\\Users\\joses\\Desktop\\PY01-Lenguajes\\Proyecto03-Lenguajes\\PL03\\actividad.txt', read, Stream),
+    leer_actividades_frase(Stream),
+    close(Stream).
+
+% Leer actividades del archivo
+leer_actividades_frase(Stream) :-
+    read(Stream, Line),
+    (   Line == end_of_file
+    ->  true
+    ;   assert(Line), % Almacena la actividad leída
+        leer_actividades_frase(Stream)
+    ).
+
+% Solicitar frase al usuario
+solicitar_frase :-
+    cargar_actividades_frase,
+    write('Por favor, ingrese una frase: '),
+    read(Frase),  % Usa read para obtener la frase
+    downcase_atom(Frase, FraseLower),  % Convertir a minúsculas
+    buscar_actividad_frase(FraseLower).
+
+% Normalizar la frase eliminando artículos y palabras irrelevantes
+normalizar_frase(Frase, FraseNormalizada) :- 
+    split_string(Frase, " ", "", Palabras),  
+    exclude(articulo_o_irrelevante, Palabras, PalabrasFiltradas),  
+    format('Palabras filtradas: ~w~n', [PalabrasFiltradas]),  % Imprimir palabras filtradas
+    atomic_list_concat(PalabrasFiltradas, ' ', FraseNormalizada). 
+
+
+% Predicado para identificar artículos y palabras irrelevantes
+articulo_o_irrelevante(Palabra) :-
+    downcase_atom(Palabra, PalabraLower),
+     member(PalabraLower, [
+        'a', 'el', 'la', 'y', 'de', 'en',
+        'que', 'por', 'con', 'un', 'una',
+        'los', 'las', 'como', 'quisiera',
+        'ir', 'me','gustaria','encantaria',
+        'quiero', 'vamos','vayamos','gusta']).
+
+% Buscar la actividad que coincide con la frase ingresada
+buscar_actividad_frase(Frase) :-
+    normalizar_frase(Frase, FraseNormalizada),  % Normaliza la frase
+    format('Frase normalizada: ~w~n', [FraseNormalizada]),  % Imprimir frase normalizada para depuración
+    (   actividad(Nombre, Costo, Tipo, Descripcion, Dias),
+        atom_string(Descripcion, DescString),
+        downcase_atom(DescString, DescStringLower),  % Convertir descripción a minúsculas
+        downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
+        sub_string(DescStringLower, _, _, _, FraseNormalizadaLower)  % Compara la frase normalizada con la descripción
+    ->  write('Descripción encontrada: '), write(DescString), nl,
+        write('Nombre de actividad: '), write(Nombre), nl,
+        write('Costo: '), write(Costo), nl,
+        write('Duracion en dias: '), write(Tipo), nl,
+        write('Categoria(s): '), write(Dias), nl
+    ;   actividad(Nombre, Costo, Tipo, Descripcion, Dias),  % Buscar por categorías
+        member(Categoria, Dias),
+        downcase_atom(Categoria, CategoriaLower),
+        downcase_atom(FraseNormalizada, FraseNormalizadaLower),  % Convertir frase normalizada a minúsculas
+        sub_string(CategoriaLower, _, _, _, FraseNormalizadaLower)  % Compara la categoría con la frase normalizada
+    ->  write('Categoría encontrada: '), write(Categoria), nl,
+        write('Nombre de actividad: '), write(Nombre), nl,
+        write('Costo: '), write(Costo), nl,
+        write('Duracion en dias: '), write(Tipo), nl,
+        write('Descripción: '), write(Descripcion), nl
+    ;   format('Error: No se encontró ninguna actividad que coincida con: ~w~n', [Frase])
+    ).
 
 
 % Menu agregar hechos
